@@ -3,6 +3,7 @@ import time
 
 import telepot
 from telepot.loop import MessageLoop
+from pytube import YouTube
 
 
 def handle(msg):
@@ -10,7 +11,17 @@ def handle(msg):
     print(content_type, chat_type, chat_id)
 
     if content_type == 'text':
-        bot.sendMessage(chat_id, msg['text'])
+        if msg['text'].startswith('https://www.youtube.com/'):
+            try:
+                yt = YouTube(msg['text'])
+                video = yt.get('mp4', '720p')
+                video.download('/home/neri/downloads')
+                message = video.filename
+            except Exception as e:
+                message = str(e)
+        else:
+            message = msg['text']    
+        bot.sendMessage(chat_id, message)
 
 TOKEN = os.environ.get('TELEGRAM_TOKEN')
 
