@@ -1,8 +1,10 @@
+from urlparse import urlparse
+
 from pytube import YouTube
 
 
 def process_message(msg):
-    if msg.startswith('https://www.youtube.com/'):
+    if urlparse(msg).netloc == 'youtube.com':
         try:
             yt = YouTube(msg)
             video = yt.get('mp4', '720p')
