@@ -2,6 +2,8 @@ from urlparse import urlparse
 
 from pytube import YouTube
 
+from db import c
+
 
 def process_message(msg):
     if urlparse(msg).netloc == 'youtube.com':
@@ -15,3 +17,6 @@ def process_message(msg):
     else:
         message = msg    
     return message
+
+def check_url_in_db(url):
+    c.execute("SELECT EXISTS(SELECT id FROM videos WHERE url='%s');" % url)
