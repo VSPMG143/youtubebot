@@ -14,8 +14,7 @@ def handle(msg):
     print(content_type, chat_type, chat_id)
 
     if content_type == 'text':
-        job = q.enqueue(process_message, msg['text'])
-        bot.sendMessage(chat_id, job.return_value)
+        job = q.enqueue(process_message, msg['text'], chat_id)
 
 
 q = Queue(connection=Redis())

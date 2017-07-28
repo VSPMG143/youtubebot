@@ -11,11 +11,11 @@ def create_db():
 
 def check_url(url):
 	c.execute(
-		"SELECT id FROM videos WHERE url = ?", url
+		"SELECT id FROM videos WHERE url = ?", (url,)
 	)
-	return c.rowcount
+	return c.rowcount == -1
 
 def insert_row(row):
     c.execute(
-        "INSERT INTO videos VALUES (?,?)", row
+        "INSERT INTO videos(name, url) VALUES (?,?)", row
     )
