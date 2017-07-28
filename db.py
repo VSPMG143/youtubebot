@@ -13,8 +13,9 @@ def check_url(url):
 	c.execute(
 		"SELECT id FROM videos WHERE url = ?", url
 	)
+	return c.rowcount
 
 def insert_row(row):
     c.execute(
-        "INSERT INTO videos VALUES (?,?,?)", row
+        "INSERT INTO videos VALUES (?,?)", row
     )
