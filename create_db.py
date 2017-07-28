@@ -1,8 +1,4 @@
-import sqlite3
+from db import create_db
 
-
-conn = sqlite3.connect('youtube.db')
-c = conn.cursor()
-
-c.execute('''CREATE TABLE videos
-             (id int primary key, name text, url text unique)''')
+if __name__ == "__main__":
+	create_db()
