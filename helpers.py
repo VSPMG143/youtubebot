@@ -1,14 +1,11 @@
+import logging
 import os
 from urllib.parse import urlparse
 
-import telepot
 from pytube import YouTube
 
 from db import check_url, insert_row
-
-
-TOKEN = os.environ.get('TELEGRAM_TOKEN')
-bot = telepot.Bot(TOKEN)
+from settings import bot
 
 
 def process_message(msg, chat_id):
@@ -17,7 +14,7 @@ def process_message(msg, chat_id):
             yt = YouTube(msg)
             video = yt.get('mp4', '720p')
             video.download('/home/neri/downloads')
-            print('success!')
+            logging.info('success!')
             insert_row((video.filename, msg))
             message = video.filename
         except Exception as e:
