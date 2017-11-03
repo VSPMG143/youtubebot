@@ -18,7 +18,7 @@ def handle(msg):
 logging.basicConfig(format=LOG_FORMAT, level=LOG_LEVEL , filename=LOG_FILENAME)
 
 
-q = Queue(connection=Redis())
+q = Queue(connection=Redis('172.17.0.2'))
 
 MessageLoop(bot, handle).run_as_thread()
 
