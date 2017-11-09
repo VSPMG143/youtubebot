@@ -1,10 +1,8 @@
 import time
 
 from telepot.loop import MessageLoop
-from redis import Redis
-from rq import Queue
 
-from helpers import process_message
+from db import check_url, insert_row
 from settings import *
 
 
@@ -15,10 +13,19 @@ def handle(msg):
     if content_type == 'text':
         job = q.enqueue(process_message, msg['text'], chat_id)
 
+
+def process_message(msg, chat_id):
+    if urlparse(msg).netloc == 'www.youtube.com' and check_url(msg):
+    	insert_row((video.filename, msg))
+        message = video.filename
+        logging.info('success!')
+    else:
+    	message = msg
+    bot.sendMessage(chat_id, message)
+
+
 logging.basicConfig(format=LOG_FORMAT, level=LOG_LEVEL , filename=LOG_FILENAME)
 
-
-q = Queue(connection=Redis('172.17.0.2'))
 
 MessageLoop(bot, handle).run_as_thread()
 

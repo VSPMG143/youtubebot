@@ -8,7 +8,7 @@ c = conn.cursor()
 
 def create_db():
 	c.execute(
-		"CREATE TABLE videos (id integer primary key autoincrement, name text, url text unique)"
+		"CREATE TABLE videos (id integer primary key autoincrement, name text, url text unique, download boolean default 0)"
 	)
 
 def check_url(url):
