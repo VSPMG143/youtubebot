@@ -2,6 +2,7 @@ import asyncio
 import time
 from urllib.parse import urlparse
 
+from pytube import YouTube
 from telepot import glance
 from telepot.aio import Bot
 from telepot.aio.loop import MessageLoop
@@ -19,8 +20,13 @@ async def handle(msg):
 
 async def process_message(msg, chat_id):
     if urlparse(msg).netloc == 'www.youtube.com' and check_url(msg):
-        insert_row((video.filename, msg))
-        message = video.filename
+        try:
+            yt = YouTube(msg)
+            video = yt.get('mp4', '720p')
+            insert_row((video.filename, msg))
+            message = video.filename
+        except Exception as e:
+            message = str(e)
     else:
     	message = msg
     await bot.sendMessage(chat_id, message)
