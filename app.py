@@ -1,4 +1,5 @@
 import time
+from urllib.parse import urlparse
 
 from telepot.loop import MessageLoop
 
@@ -11,12 +12,12 @@ def handle(msg):
     logging.info((content_type, chat_type, chat_id))
 
     if content_type == 'text':
-        job = q.enqueue(process_message, msg['text'], chat_id)
+        process_message(msg['text'], chat_id)
 
 
 def process_message(msg, chat_id):
     if urlparse(msg).netloc == 'www.youtube.com' and check_url(msg):
-    	insert_row((video.filename, msg))
+        insert_row((video.filename, msg))
         message = video.filename
         logging.info('success!')
     else:
