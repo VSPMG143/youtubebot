@@ -21,3 +21,5 @@ def insert_row(row):
     c.execute(
         "INSERT INTO videos(name, url) VALUES (?,?)", row
     )
+    conn.commit()
+

@@ -1,4 +1,4 @@
 telepot==12.1
 pytube==6.4.2
 rq==0.8.0
-aioodb==0.2.0
+aiosqlite==0.2.0
