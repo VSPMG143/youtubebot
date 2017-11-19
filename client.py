@@ -1,18 +1,24 @@
+import os
+
 import aiohttp
 import asyncio
 
+from pytube import YouTube
 
-async def fetch(session, url):
-    with async_timeout.timeout(10):
-        async with session.get(url) as response:
-            videos = await response.text()
-            asyncio.gather(*videos, return_exceptions=False)
 
+SERVER_URL = os.environ.get('SERVER_URL') 
 
 async def main():
     async with aiohttp.ClientSession() as session:
-        await fetch(session, 'http://python.org')
+        async with session.get(SERVER_URL) as response:
+            videos = await response.json()
+            for video in videos:
+                yt = YouTube(video[2])
+                yt_video = yt.get('mp4', '720p')
+                yt_video.download('/home/neri/downloads')    
+                session.post(SERVER_URL + 'update', json={'url'=video[2]})
 
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
+
