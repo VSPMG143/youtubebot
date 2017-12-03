@@ -15,6 +15,7 @@ async def get_new_videos(request):
 
 async def update_video(request):
     url = request.match_info.get('url', '')
+    print('Try to update: ', url)
     async with aiosqlite.connect('youtube.sqlite3') as db: 
         await db.execute('UPDATE videos SET download = 1 WHERE url = ?', (url,))
         await db.commit()

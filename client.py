@@ -16,7 +16,7 @@ async def main():
                 yt = YouTube(video[2])
                 yt_video = yt.get('mp4', '720p')
                 yt_video.download('/home/neri/downloads')    
-                session.post(SERVER_URL + 'update', json={'url'=video[2]})
+                await session.post(SERVER_URL + 'update', json={'url'=video[2]})
 
 
 loop = asyncio.get_event_loop()

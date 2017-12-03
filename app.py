@@ -20,7 +20,7 @@ async def handle(msg):
 
 
 async def process_message(msg, chat_id):
-    if urlparse(msg).netloc == 'www.youtube.com':
+    if urlparse(msg).netloc in ('www.youtube.com', 'youtu.be'):
         async with aiosqlite.connect(DB_NAME) as db:
             cursor = await db.execute("SELECT id FROM videos WHERE url = ?", (msg,))
             if cursor.rowcount == -1:
