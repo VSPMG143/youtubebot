@@ -25,10 +25,10 @@ async def get_new_videos(request):
 
 
 async def update_video(request):
-    cursos = await app['db'].cursor()
-    url = request.match_info.get('url', '')
-    await cursor.execute('UPDATE videos SET download = 1 WHERE url = (%s)', (url,))
-    await cursor.commit()
+    async with app['conn'].cursor() as cursor:
+        data = await request.json()
+        url = data.get('url', '')
+        await cursor.execute('UPDATE videos SET download = true WHERE url = (%s)', (url,))
     return web.json_response({'status': 'ok'})
 
 
