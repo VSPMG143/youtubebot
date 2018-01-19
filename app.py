@@ -19,51 +19,52 @@ async def handle(msg):
        await process_message(msg['text'], chat_id)
 
 
-async def process_message(msg, chat_id):
-    if urlparse(msg).netloc in ('www.youtube.com', 'youtu.be'):
-        async with aiopg.connect(DSN) as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute('SELECT id FROM videos WHERE url = (%s)', (msg,))  
-                if cursor.rowcount == 0:
-                    try:
-                        yt = YouTube(msg)
-                        video = yt.get('mp4', '720p')
-                        await cursor.execute("INSERT INTO videos(name, url) VALUES (%s, %s)", (video.filename, msg))
-                        message = video.filename
-                    except Exception as e:
-                        message = str(e)
-                else:
-                    message = 'This video is exist!'
-                    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                        [InlineKeyboardButton(text='Скачать еще раз?', callback_data=url)],
-                    ])
-
-    else:
-    	message = msg
-    await bot.sendMessage(chat_id, message)
-
-
 async def handle_callback(msg):
     query_id, from_id, query_data = telepot.glance(msg, flavor='callback_query')
 
     await process_callback(query_data, from_id)
 
 
-async def process_callback(msg, chat_id):
-    if urlparse(msg).netloc in ('www.youtube.com', 'youtu.be'):
-        async with aiopg.connect(DSN) as conn:
-            async with conn.cursor() as cursor:
-                try:
-                    yt = YouTube(msg)
-                    video = yt.get('mp4', '720p')
-                    await cursor.execute('UPDATE videos SET download = false WHERE url = (%s)', (msg,))
-                    message = video.filename
-                except Exception as e:
-                    message = str(e)
-    else:
-        message = msg
-    await bot.sendMessage(chat_id, message)
+class ProcessMessage(object):
 
+    def __init__(self, msg, chat_id):
+        self.msg = msg
+        self.chat_id = chat_id
+
+    async def process(self, force=False):
+        if self.check_message:
+            async with aiopg.connect(DSN) as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute('SELECT id FROM videos WHERE url = (%s)', (self.msg,))
+                    if force or await self.check_exist(cursor):
+                        try:
+                            video = self.fetch_video
+                            if force:
+                                await cursor.execute('UPDATE videos SET download = false WHERE url = (%s)', (self.msg,))
+                            else:
+                                await cursor.execute('INSERT INTO videos(name, url) VALUES (%s, %s)', (video.filename, self.msg))
+                            message = video.filename
+                        except Exception as e:
+                            message = str(e)
+                    else:
+                        message = 'This video is exist!'
+                        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                            [InlineKeyboardButton(text='Скачать еще раз?', callback_data=url)],
+                        ])
+        else:
+            message = msg
+            await bot.sendMessage(chat_id, message)
+
+    def check_message(self):
+        return urlparse(self.msg).netloc in ('www.youtube.com', 'youtu.be')
+
+    def fetch_video(self):
+        yt = YouTube(self.msg)
+        return yt.get('mp4', '720p')
+
+    await def check_exist(self, cursor):
+        await cursor.execute('SELECT id FROM videos WHERE url = (%s)', (msg,))
+        return cursor.rowcount == 0:
 
 loop = asyncio.get_event_loop()
 loop.set_debug(True)
