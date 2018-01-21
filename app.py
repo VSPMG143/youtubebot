@@ -17,7 +17,10 @@ async def handle_message(msg):
 
     if content_type == 'text':
         handle_class = ProcessMessage(msg['text'], chat_id)
-        await handle_class.start()
+        if text.startswith('/look_videos'):
+            await handle_class.start()
+        else:
+            await handle_class.start()
 
 async def handle_callback(msg):
     query_id, from_id, query_data = telepot.glance(msg, flavor='callback_query')
@@ -31,6 +34,7 @@ class ProcessMessage(object):
     def __init__(self, msg, chat_id):
         self.msg = msg
         self.chat_id = chat_id
+        self.keyboard = None
 
     async def start(self, force=False):
         if self.check_message:
@@ -41,12 +45,16 @@ class ProcessMessage(object):
                         message = self.load_video(cursor, force)
                     else:
                         message = 'This video is exist!'
-                        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                        self.keyboard = InlineKeyboardMarkup(inline_keyboard=[
                             [InlineKeyboardButton(text='Скачать еще раз?', callback_data=url)],
                         ])
         else:
             message = msg
-            await bot.sendMessage(chat_id, message)
+            if not self.keyboard:
+                self.keyboard = ReplyKeyboardMarkup(keyboard=[
+                     ['Посмотреть список видео', KeyboardButton(text='/look_videos')],
+                ])
+            await bot.sendMessage(chat_id, message, reply_markup=keyboard)
 
     def load_video(self, cursor, force):
         try:
