@@ -7,7 +7,7 @@ from pytube import YouTube
 from telepot import glance
 from telepot.aio import Bot
 from telepot.aio.loop import MessageLoop
-from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
+from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 from secret import TELEGRAM_TOKEN, DSN
 
@@ -17,13 +17,13 @@ async def handle_message(msg):
 
     if content_type == 'text':
         handle_class = ProcessMessage(msg['text'], chat_id)
-        if text.startswith('/look_videos'):
+        if msg['text'].startswith('/look_videos'):
             await handle_class.start()
         else:
             await handle_class.start()
 
 async def handle_callback(msg):
-    query_id, from_id, query_data = telepot.glance(msg, flavor='callback_query')
+    query_id, from_id, query_data = glance(msg, flavor='callback_query')
 
     handle_class = ProcessMessage(query_data, from_id, force=True)
     await handle_class.start()
@@ -37,28 +37,28 @@ class ProcessMessage(object):
         self.keyboard = None
 
     async def start(self, force=False):
-        if self.check_message:
+        if self.check_message():
             async with aiopg.connect(DSN) as conn:
                 async with conn.cursor() as cursor:
                     await cursor.execute('SELECT id FROM videos WHERE url = (%s)', (self.msg,))
-                    if force or await self.check_exist(cursor):
-                        message = self.load_video(cursor, force)
+                    if await self.check_exist(cursor) or force:
+                        message = await self.load_video(cursor, force)
                     else:
                         message = 'This video is exist!'
                         self.keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                            [InlineKeyboardButton(text='Скачать еще раз?', callback_data=url)],
+                            [InlineKeyboardButton(text='Скачать еще раз?', callback_data=self.msg)],
                         ])
         else:
-            message = msg
-            if not self.keyboard:
-                self.keyboard = ReplyKeyboardMarkup(keyboard=[
-                     ['Посмотреть список видео', KeyboardButton(text='/look_videos')],
-                ])
-            await bot.sendMessage(chat_id, message, reply_markup=keyboard)
+            message = self.msg
+        if not self.keyboard:
+            self.keyboard = ReplyKeyboardMarkup(keyboard=[
+                 [KeyboardButton(text='/look_videos')],
+            ])
+        await bot.sendMessage(self.chat_id, message, reply_markup=self.keyboard)
 
-    def load_video(self, cursor, force):
+    async def load_video(self, cursor, force):
         try:
-            video = self.fetch_video
+            video = self.fetch_video()
             if force:
                 await cursor.execute('UPDATE videos SET download = false WHERE url = (%s)', (self.msg,))
             else:
@@ -74,16 +74,16 @@ class ProcessMessage(object):
         yt = YouTube(self.msg)
         return yt.get('mp4', '720p')
 
-    await def check_exist(self, cursor):
-        await cursor.execute('SELECT id FROM videos WHERE url = (%s)', (msg,))
-        return cursor.rowcount == 0:
+    async def check_exist(self, cursor):
+        await cursor.execute('SELECT id FROM videos WHERE url = (%s)', (self.msg,))
+        return cursor.rowcount == 0
 
 loop = asyncio.get_event_loop()
 loop.set_debug(True)
 bot = Bot(TELEGRAM_TOKEN)
 loop.create_task(MessageLoop(bot, 
-    {'chat': handle_message},
-    {'callback_query': handle_callback}
+    {'chat': handle_message,
+     'callback_query': handle_callback}
 ).run_forever())
 loop.run_forever()
 
