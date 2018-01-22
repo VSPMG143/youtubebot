@@ -18,15 +18,15 @@ async def handle_message(msg):
     if content_type == 'text':
         handle_class = ProcessMessage(msg['text'], chat_id)
         if msg['text'].startswith('/look_videos'):
-            await handle_class.start()
+            print(msg['text'])
         else:
             await handle_class.start()
 
 async def handle_callback(msg):
     query_id, from_id, query_data = glance(msg, flavor='callback_query')
-
-    handle_class = ProcessMessage(query_data, from_id, force=True)
-    await handle_class.start()
+    
+    handle_class = ProcessMessage(query_data, from_id)
+    await handle_class.start(force=True)
 
 
 class ProcessMessage(object):
