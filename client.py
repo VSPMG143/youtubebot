@@ -18,12 +18,12 @@ async def main():
                     yt = YouTube(video[2])
                     yt_video = yt.get('mp4', '720p')
                     yt_video.download('/home/neri/downloads')  
-                    print('Success download!', video[2])  
+                    print('Success download!', video[1])  
                 except Exception as e:
-                    print(e, video[2])
+                    print(e, video[1])
                 finally:
                     await session.post(urljoin(SERVER_URL, 'update'), json={'url': video[2]})
-                    print('Success update!', video[2])
+                    print('Success update!', video[1])
 
 
 loop = asyncio.get_event_loop()
