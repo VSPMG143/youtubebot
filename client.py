@@ -16,8 +16,12 @@ async def main():
             for video in videos['videos']:
                 try:
                     yt = YouTube(video[2])
-                    yt_video = yt.get('mp4', '720p')
-                    yt_video.download('/home/neri/downloads')  
+                    streams = yt.streams.filter(file_extension='mp4', only_video=True).\
+                        order_by('resolution').desc().all()
+                    for stream in streams:
+                        if stream.resolution <= '720p':
+                            stream.download('/home/neri/downloads')
+                            break
                     print('Success download!', video[2])  
                 except Exception as e:
                     print(e, video[2])
@@ -28,4 +32,3 @@ async def main():
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
-

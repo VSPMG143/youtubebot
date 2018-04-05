@@ -1,4 +1,4 @@
 aiohttp==2.3.9
 telepot==12.5
-pytube==8.0.3
+pytube==9.1.0
 aiopg==0.13.1
