@@ -24,10 +24,10 @@ async def main():
                             break
                     print('Success download!', video[2])  
                 except Exception as e:
-                    print(e, video[2])
+                    print(e, video[1])
                 finally:
                     await session.post(urljoin(SERVER_URL, 'update'), json={'url': video[2]})
-                    print('Success update!', video[2])
+                    print('Success update!', video[1])
 
 
 loop = asyncio.get_event_loop()
