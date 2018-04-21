@@ -1,5 +1,4 @@
 import asyncio
-import time
 from urllib.parse import urlparse
 
 import aiopg
@@ -21,6 +20,7 @@ async def handle_message(msg):
             print(msg['text'])
         else:
             await handle_class.start()
+
 
 async def handle_callback(msg):
     query_id, from_id, query_data = glance(msg, flavor='callback_query')
@@ -78,12 +78,10 @@ class ProcessMessage(object):
         await cursor.execute('SELECT id FROM videos WHERE url = (%s)', (self.msg,))
         return cursor.rowcount == 0
 
-loop = asyncio.get_event_loop()
-loop.set_debug(True)
-bot = Bot(TELEGRAM_TOKEN)
-loop.create_task(MessageLoop(bot, 
-    {'chat': handle_message,
-     'callback_query': handle_callback}
-).run_forever())
-loop.run_forever()
 
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.set_debug(True)
+    bot = Bot(TELEGRAM_TOKEN)
+    loop.create_task(MessageLoop(bot, {'chat': handle_message, 'callback_query': handle_callback}).run_forever())
+    loop.run_forever()

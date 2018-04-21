@@ -1,5 +1,4 @@
 import logging
-import os
 
 import telepot
 from secret import TELEGRAM_TOKEN
