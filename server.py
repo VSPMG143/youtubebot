@@ -1,6 +1,7 @@
 import aiopg
 from aiohttp import web
 
+from db import INSERT_ROW
 from secret import DSN
 
 
@@ -29,6 +30,14 @@ async def update_video(request):
         data = await request.json()
         url = data.get('url', '')
         await cursor.execute('UPDATE videos SET download = true WHERE url = (%s)', (url,))
+    return web.json_response({'status': 'ok'})
+
+
+async def create_video(request):
+    async with app['conn'].cursor() as cursor:
+        data = await request.json()
+        filename, url = data.get('filename', ''), data.get('url', '')
+        await cursor.execute(INSERT_ROW, (filename, url))
     return web.json_response({'status': 'ok'})
 
 
