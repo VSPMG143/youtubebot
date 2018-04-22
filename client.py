@@ -1,11 +1,11 @@
+import asyncio
 import os
 from urllib.parse import urljoin
 
 import aiohttp
-import asyncio
-
 from pytube import YouTube
 
+from utils import get_stream
 
 SERVER_URL = os.environ.get('SERVER_URL') 
 
@@ -16,12 +16,8 @@ async def main():
             for video in videos['videos']:
                 try:
                     yt = YouTube(video[2])
-                    streams = yt.streams.filter(file_extension='mp4', only_video=True).\
-                        order_by('resolution').desc().all()
-                    for stream in streams:
-                        if stream.resolution <= '720p':
-                            stream.download('/home/neri/downloads')
-                            break
+                    stream = get_stream(yt)
+                    stream.download('/home/neri/downloads')
                     print('Success download!', video[2])  
                 except Exception as e:
                     print(e, video[1])

@@ -11,6 +11,7 @@ from telepot.aio.loop import MessageLoop
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 from secret import TELEGRAM_TOKEN, DSN
+from utils import get_stream
 
 
 async def handle_message(msg):
@@ -60,21 +61,21 @@ class ProcessMessage(object):
 
     async def load_video(self, cursor, force):
         try:
-            video = self.fetch_video()
+            stream = self.fetch_stream()
             if force:
                 await cursor.execute('UPDATE videos SET download = false WHERE url = (%s)', (self.msg,))
             else:
-                await cursor.execute('INSERT INTO videos(name, url) VALUES (%s, %s)', (video.filename, self.msg))
-            return video.filename
+                await cursor.execute('INSERT INTO videos(name, url) VALUES (%s, %s)', (stream.filename, self.msg))
+            return stream.filename
         except Exception as e:
             return str(e)
 
     def check_message(self):
         return urlparse(self.msg).netloc in ('www.youtube.com', 'youtu.be')
 
-    def fetch_video(self):
+    def fetch_stream(self):
         yt = YouTube(self.msg)
-        return yt.get('mp4', '720p')
+        return get_stream(yt)
 
     async def check_exist(self, cursor):
         await cursor.execute('SELECT id FROM videos WHERE url = (%s)', (self.msg,))
