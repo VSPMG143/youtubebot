@@ -86,7 +86,7 @@ if __name__ == '__main__':
     loop.set_debug(True)
     bot = Bot(TELEGRAM_TOKEN)
     parser = argparse.ArgumentParser()
-    parser.add_argument('proxy', type=str, help='proxy ip')
+    parser.add_argument('--proxy', type=str, help='proxy ip')
     args = parser.parse_args()
     if args.proxy:
         set_proxy(args.proxy)
