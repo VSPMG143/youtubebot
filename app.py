@@ -3,7 +3,7 @@ import asyncio
 from urllib.parse import urlparse
 
 import aiopg
-from pytube import YouTube
+from pytube import YouTube, Playlist
 from telepot import glance
 from telepot.aio import Bot
 from telepot.aio.api import set_proxy
@@ -38,6 +38,7 @@ class ProcessMessage(object):
         self.msg = msg
         self.chat_id = chat_id
         self.keyboard = None
+        self.videos = []
 
     async def start(self, force=False):
         if self.check_message():
@@ -45,7 +46,10 @@ class ProcessMessage(object):
                 async with conn.cursor() as cursor:
                     await cursor.execute('SELECT id FROM videos WHERE url = (%s)', (self.msg,))
                     if await self.check_exist(cursor) or force:
-                        message = await self.load_video(cursor, force)
+                        videos = self.get_videos()
+                        message = ''
+                        for video in videos:
+                            message += await self.load_video(cursor, video, force)
                     else:
                         message = 'This video is exist!'
                         self.keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -59,13 +63,24 @@ class ProcessMessage(object):
             ])
         await bot.sendMessage(self.chat_id, message, reply_markup=self.keyboard)
 
-    async def load_video(self, cursor, force):
+    def get_videos(self):
         try:
-            stream = self.fetch_stream()
+            playlist = Playlist(self.msg)
+            playlist.populate_video_urls()
+            videos = playlist.video_urls
+        except IndexError:
+            videos = [self.msg]
+        return videos
+
+    async def load_video(self, cursor, video, force):
+        try:
+            stream = self.fetch_stream(video)
             if force:
-                await cursor.execute('UPDATE videos SET download = false WHERE url = (%s)', (self.msg,))
+                await cursor.execute('UPDATE videos SET download = false WHERE url = (%s)', (video,))
             else:
-                await cursor.execute('INSERT INTO videos(name, url) VALUES (%s, %s)', (stream.default_filename, self.msg))
+                await cursor.execute(
+                    'INSERT INTO videos(name, url) VALUES (%s, %s)', (stream.default_filename, video)
+                )
             return stream.default_filename
         except Exception as e:
             return str(e)
@@ -73,8 +88,9 @@ class ProcessMessage(object):
     def check_message(self):
         return urlparse(self.msg).netloc in ('www.youtube.com', 'youtu.be')
 
-    def fetch_stream(self):
-        yt = YouTube(self.msg)
+    @staticmethod
+    def fetch_stream(video):
+        yt = YouTube(video)
         return get_stream(yt)
 
     async def check_exist(self, cursor):
