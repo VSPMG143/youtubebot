@@ -65,8 +65,8 @@ class ProcessMessage(object):
             if force:
                 await cursor.execute('UPDATE videos SET download = false WHERE url = (%s)', (self.msg,))
             else:
-                await cursor.execute('INSERT INTO videos(name, url) VALUES (%s, %s)', (stream.filename, self.msg))
-            return stream.filename
+                await cursor.execute('INSERT INTO videos(name, url) VALUES (%s, %s)', (stream.default_filename, self.msg))
+            return stream.default_filename
         except Exception as e:
             return str(e)
 
