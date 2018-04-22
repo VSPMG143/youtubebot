@@ -4,3 +4,4 @@ def get_stream(yt):
     for stream in streams:
         if stream.resolution <= '720p':
             return stream
+    return yt.streams.first()
