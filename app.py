@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 from urllib.parse import urlparse
 
@@ -5,6 +6,7 @@ import aiopg
 from pytube import YouTube
 from telepot import glance
 from telepot.aio import Bot
+from telepot.aio.api import set_proxy
 from telepot.aio.loop import MessageLoop
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
@@ -83,5 +85,10 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.set_debug(True)
     bot = Bot(TELEGRAM_TOKEN)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('proxy', type=str, help='proxy ip')
+    args = parser.parse_args()
+    if args.proxy:
+        set_proxy(args.proxy)
     loop.create_task(MessageLoop(bot, {'chat': handle_message, 'callback_query': handle_callback}).run_forever())
     loop.run_forever()
