@@ -1,4 +1,5 @@
 import sqlite3
+from collections import namedtuple
 
 from settings import DB_NAME
 
@@ -29,3 +30,6 @@ def insert_row(row):
 
 
 INSERT_ROW = "INSERT INTO videos(name, url) VALUES (?,?)"
+
+
+Video = namedtuple('Video', 'name url is_download id')
