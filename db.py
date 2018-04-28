@@ -11,7 +11,7 @@ c = conn.cursor()
 def create_db():
     c.execute(
         "CREATE TABLE videos (id integer primary key autoincrement, name text, "
-        "url text unique, download boolean default 0)"
+        "url text unique, download boolean default 0, updated date default CURRENT_DATE)"
     )
 
 
@@ -32,4 +32,4 @@ def insert_row(row):
 INSERT_ROW = "INSERT INTO videos(name, url) VALUES (?,?)"
 
 
-Video = namedtuple('Video', 'name url is_download id')
+Video = namedtuple('Video', 'name url is_download id updated')
