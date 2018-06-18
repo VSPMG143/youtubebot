@@ -1,8 +1,10 @@
+from datetime import date
+
 import aiopg
 from aiohttp import web
+from secret import DSN
 
 from db import INSERT_ROW
-from secret import DSN
 
 
 async def init_pg(app):
@@ -33,6 +35,15 @@ async def update_video(request):
     return web.json_response({'status': 'ok'})
 
 
+async def update_videos(request):
+    async with app['conn'].cursor() as cursor:
+        data = await request.json()
+        await cursor.execute(
+            'UPDATE videos SET download = false WHERE updated = (%s)', (data.get('date', date.today()),)
+        )
+        data.get('date', date.today())
+
+
 async def create_video(request):
     async with app['conn'].cursor() as cursor:
         data = await request.json()
@@ -46,5 +57,5 @@ app.on_startup.append(init_pg)
 app.on_cleanup.append(close_pg)
 app.router.add_get('/', get_new_videos)
 app.router.add_post('/update', update_video)
+app.router.add_post('/update_by_date', update_videos)
 web.run_app(app, host='0.0.0.0', port=8080)
-
