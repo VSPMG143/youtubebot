@@ -28,11 +28,14 @@ async def handle_message(msg):
 async def handle_callback(msg):
     query_id, from_id, query_data = glance(msg, flavor='callback_query')
     
-    handle_class = ProcessMessage(query_data, from_id)
-    await handle_class.start(force=True)
+    path, msg = query_data.split(ProcessMessage.DIVIDER)
+    handle_class = ProcessMessage(msg, from_id)
+    await getattr(handle_class, path).start(force=True)
 
 
 class ProcessMessage(object):
+    DIVIDER = '$#@'
+    ONE_MORE = 'reload'
 
     def __init__(self, msg, chat_id):
         self.msg = msg
@@ -52,8 +55,9 @@ class ProcessMessage(object):
                             message += await self.load_video(cursor, video, force)
                     else:
                         message = 'This video is exist!'
+                        callback_data = f'{self.ONE_MORE}{self.DIVIDER}{self.msg}'
                         self.keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                            [InlineKeyboardButton(text='Скачать еще раз?', callback_data=self.msg)],
+                            [InlineKeyboardButton(text='Скачать еще раз?', callback_data=callback_data)],
                         ])
         else:
             message = self.msg
@@ -96,6 +100,14 @@ class ProcessMessage(object):
     async def check_exist(self, cursor):
         await cursor.execute('SELECT id FROM videos WHERE url = (%s)', (self.msg,))
         return cursor.rowcount == 0
+
+    async def reload(self):
+        async with aiopg.connect(DSN) as conn:
+            async with conn.cursor() as cursor:
+                videos = self.get_videos()
+                message = ''
+                for video in videos:
+                    message += await self.load_video(cursor, video, True)
 
 
 if __name__ == '__main__':
