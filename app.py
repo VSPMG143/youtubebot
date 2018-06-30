@@ -11,7 +11,6 @@ from telepot.aio.loop import MessageLoop
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 from secret import TELEGRAM_TOKEN, DSN
-from utils import get_stream
 
 
 async def handle_message(msg):
@@ -149,12 +148,13 @@ class ProcessMessageReload(BaseProcessMessage):
 
 
 class ProcessMessageList(BaseProcessMessage):
-    async with aiopg.connect(DSN) as conn:
-        async with conn.cursor() as cursor:
-            videos = self.get_videos()
-            for video in videos:
-                message = await self.load_video(cursor, video)
-                await self.send_message(message)
+    async def process_message(self):
+        async with aiopg.connect(DSN) as conn:
+            async with conn.cursor() as cursor:
+                videos = self.get_videos()
+                for video in videos:
+                    message = await self.load_video(cursor, video)
+                    await self.send_message(message)
 
 
 class ProcessMessageOne(BaseProcessMessage):
