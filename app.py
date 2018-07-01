@@ -60,7 +60,7 @@ class BaseProcessMessage(object):
             playlist.populate_video_urls()
             videos = playlist.video_urls
         except IndexError:
-            videos = [self.msg]
+            videos = self.msg
         return videos
 
     def get_stream(self, yt):
@@ -93,10 +93,9 @@ class BaseProcessMessage(object):
         except Exception as e:
             return str(e)
 
-    @staticmethod
-    def fetch_stream(video):
+    def fetch_stream(self, video):
         yt = YouTube(video)
-        return get_stream(yt)
+        return self.get_stream(yt)
 
     async def check_exist(self, cursor):
         await cursor.execute('SELECT id FROM videos WHERE url = (%s)', (self.msg,))
