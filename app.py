@@ -10,7 +10,8 @@ from telepot.aio.api import set_proxy
 from telepot.aio.loop import MessageLoop
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
-from secret import TELEGRAM_TOKEN, DSN
+from db import videos
+from secret import *
 
 
 async def handle_message(msg):
@@ -50,6 +51,18 @@ class BaseProcessMessage(object):
         self.chat_id = chat_id
         self.keyboard = None
         self.videos = []
+        self.engine = None
+
+    async def connect_db(self):
+        loop = asyncio.get_event_loop()
+        self.engine = await create_engine(
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST,
+            port=DB_PORT,
+            loop=loop
+        )
 
     def check_message(self):
         return urlparse(self.msg).netloc in ('www.youtube.com', 'youtu.be')
@@ -71,6 +84,7 @@ class BaseProcessMessage(object):
         return yt.streams.first()
 
     async def start(self):
+        await self.connect_db()
         if self.check_message():
             await self.process_message()
         else:
@@ -83,12 +97,14 @@ class BaseProcessMessage(object):
     async def send_message(self, message):
         await bot.sendMessage(self.chat_id, message, reply_markup=self.keyboard)
 
-    async def load_video(self, cursor, video):
+    async def load_video(self, video):
         try:
             stream = self.fetch_stream(video)
-            await cursor.execute(
-                'INSERT INTO videos(name, url) VALUES (%s, %s)', (stream.default_filename, video)
+            query = videos.insert().values(
+                videos.c.name=stream.default_filename, videos.c.url=video
             )
+            async with engine.acquire() as connection:
+                await connection.execute(query)
             return stream.default_filename
         except Exception as e:
             return str(e)
@@ -97,50 +113,48 @@ class BaseProcessMessage(object):
         yt = YouTube(video)
         return self.get_stream(yt)
 
-    async def check_exist(self, cursor):
-        await cursor.execute('SELECT id FROM videos WHERE url = (%s)', (self.msg,))
-        return cursor.rowcount == 0
-
+    async def check_exist(self):
+        query = videos.select().where(videos.c.url == self.msg)
+        async with engine.acquire() as connection:
+            res = await connection.execute(query)
+            return bool(await res.fetchone())
 
 class ProcessMessage(BaseProcessMessage):
 
     async def process_message(self):
-        async with aiopg.connect(DSN) as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute('SELECT id FROM videos WHERE url = (%s)', (self.msg,))
-                if await self.check_exist(cursor):
-                    videos = self.get_videos()
-                    if isinstance(videos, list):
-                        message = 'Will you want load playlist?'
-                        callback_data = f'{self.LOAD_LIST}{self.DIVIDER}{self.msg}'
-                        callback_data2 = f'{self.LOAD_ONE}{self.DIVIDER}{self.msg}'
-                        self.keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                            [InlineKeyboardButton(text='Скачать весь плэйлист?', callback_data=callback_data)],
-                            [InlineKeyboardButton(text='Скачать только это видео?', callback_data=callback_data2)]
-                        ])
-                    else:
-                        message = await self.load_video(cursor, videos)
-                else:
-                    message = 'This video is exist!'
-                    callback_data = f'{self.ONE_MORE}{self.DIVIDER}{self.msg}'
-                    self.keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                        [InlineKeyboardButton(text='Скачать еще раз?', callback_data=callback_data)],
-                    ])
-                await self.send_message(message)
+        if await self.check_exist():
+            videos = self.get_videos()
+            if isinstance(videos, list):
+                message = 'Will you want load playlist?'
+                callback_data = f'{self.LOAD_LIST}{self.DIVIDER}{self.msg}'
+                callback_data2 = f'{self.LOAD_ONE}{self.DIVIDER}{self.msg}'
+                self.keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text='Скачать весь плэйлист?', callback_data=callback_data)],
+                    [InlineKeyboardButton(text='Скачать только это видео?', callback_data=callback_data2)]
+                ])
+            else:
+                message = await self.load_video(videos)
+        else:
+            message = 'This video is exist!'
+            callback_data = f'{self.ONE_MORE}{self.DIVIDER}{self.msg}'
+            self.keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text='Скачать еще раз?', callback_data=callback_data)],
+            ])
+        await self.send_message(message)
 
 
 class ProcessMessageReload(BaseProcessMessage):
 
     async def process_message(self):
-        async with aiopg.connect(DSN) as conn:
-            async with conn.cursor() as cursor:
-                message = await self.load_video(cursor, self.msg)
-                await self.send_message(message)
+        message = await self.load_video(self.msg)
+        await self.send_message(message)
 
-    async def load_video(self, cursor, video,):
+    async def load_video(self, video):
         try:
             stream = self.fetch_stream(video)
-            await cursor.execute('UPDATE videos SET download = false WHERE url = (%s)', (video,))
+            query = videos.update().where(videos.c.url == video).values(videos.c.download=false)
+            async with engine.acquire() as connection:
+                await connection.execute(query)
             return stream.default_filename
         except Exception as e:
             return str(e)
@@ -148,20 +162,16 @@ class ProcessMessageReload(BaseProcessMessage):
 
 class ProcessMessageList(BaseProcessMessage):
     async def process_message(self):
-        async with aiopg.connect(DSN) as conn:
-            async with conn.cursor() as cursor:
-                videos = self.get_videos()
-                for video in videos:
-                    message = await self.load_video(cursor, video)
-                    await self.send_message(message)
+        videos = self.get_videos()
+        for video in videos:
+            message = await self.load_video(video)
+            await self.send_message(message)
 
 
 class ProcessMessageOne(BaseProcessMessage):
     async def process_message(self):
-        async with aiopg.connect(DSN) as conn:
-            async with conn.cursor() as cursor:
-                message = await self.load_video(cursor, self.msg)
-                await self.send_message(message)
+        message = await self.load_video(self.msg)
+        await self.send_message(message)
 
 
 if __name__ == '__main__':
