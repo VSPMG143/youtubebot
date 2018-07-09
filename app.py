@@ -2,7 +2,7 @@ import argparse
 import asyncio
 from urllib.parse import urlparse
 
-import aiopg
+from aiopg.sa import create_engine
 from pytube import YouTube, Playlist
 from telepot import glance
 from telepot.aio import Bot
@@ -103,7 +103,7 @@ class BaseProcessMessage(object):
             query = videos.insert().values(
                 videos.c.name=stream.default_filename, videos.c.url=video
             )
-            async with engine.acquire() as connection:
+            async with self.engine.acquire() as connection:
                 await connection.execute(query)
             return stream.default_filename
         except Exception as e:
@@ -115,7 +115,7 @@ class BaseProcessMessage(object):
 
     async def check_exist(self):
         query = videos.select().where(videos.c.url == self.msg)
-        async with engine.acquire() as connection:
+        async with self.engine.acquire() as connection:
             res = await connection.execute(query)
             return bool(await res.fetchone())
 
@@ -153,7 +153,7 @@ class ProcessMessageReload(BaseProcessMessage):
         try:
             stream = self.fetch_stream(video)
             query = videos.update().where(videos.c.url == video).values(videos.c.download=false)
-            async with engine.acquire() as connection:
+            async with self.engine.acquire() as connection:
                 await connection.execute(query)
             return stream.default_filename
         except Exception as e:
