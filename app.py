@@ -101,7 +101,7 @@ class BaseProcessMessage(object):
         try:
             stream = self.fetch_stream(video)
             query = videos.insert().values(
-                videos.c.name=stream.default_filename, videos.c.url=video
+                name=stream.default_filename, url=video
             )
             async with self.engine.acquire() as connection:
                 await connection.execute(query)
@@ -152,7 +152,7 @@ class ProcessMessageReload(BaseProcessMessage):
     async def load_video(self, video):
         try:
             stream = self.fetch_stream(video)
-            query = videos.update().where(videos.c.url == video).values(videos.c.download=false)
+            query = videos.update().where(videos.c.url == video).values(download=False)
             async with self.engine.acquire() as connection:
                 await connection.execute(query)
             return stream.default_filename
