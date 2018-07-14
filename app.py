@@ -67,7 +67,11 @@ class BaseProcessMessage(object):
     def check_message(self):
         return urlparse(self.msg).netloc in ('www.youtube.com', 'youtu.be')
 
-    def get_videos(self):
+    async def get_videos(self):
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self._get_videos) 
+
+    def _get_videos(self):
         try:
             playlist = Playlist(self.msg)
             playlist.populate_video_urls()
@@ -76,12 +80,9 @@ class BaseProcessMessage(object):
             videos = self.msg
         return videos
 
-    def get_stream(self, yt):
-        streams = yt.streams.filter(file_extension='mp4', type='video').order_by('resolution').desc().all()
-        for stream in streams:
-            if stream.includes_audio_track and stream.resolution <= '720p':
-                return stream
-        return yt.streams.first()
+    async def get_stream(self, yt):
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self._get_stream, yt)
 
     async def start(self):
         await self.connect_db()
@@ -99,7 +100,7 @@ class BaseProcessMessage(object):
 
     async def load_video(self, video):
         try:
-            stream = self.fetch_stream(video)
+            stream = await self.fetch_stream(video)
             query = videos.insert().values(
                 name=stream.default_filename, url=video
             )
@@ -109,9 +110,17 @@ class BaseProcessMessage(object):
         except Exception as e:
             return str(e)
 
-    def fetch_stream(self, video):
+    async def fetch_stream(self, video):
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self._fetch_stream, video)
+
+    def _fetch_stream(self, video):
         yt = YouTube(video)
-        return self.get_stream(yt)
+        streams = yt.streams.filter(file_extension='mp4', type='video').order_by('resolution').desc().all()
+        for stream in streams:
+            if stream.includes_audio_track and stream.resolution <= '720p':
+                return stream
+        return yt.streams.first()
 
     async def check_exist(self):
         query = videos.select().where(videos.c.url == self.msg)
@@ -122,8 +131,8 @@ class BaseProcessMessage(object):
 class ProcessMessage(BaseProcessMessage):
 
     async def process_message(self):
-        if await self.check_exist():
-            videos = self.get_videos()
+        if not await self.check_exist():
+            videos = await self.get_videos()
             if isinstance(videos, list):
                 message = 'Will you want load playlist?'
                 callback_data = f'{self.LOAD_LIST}{self.DIVIDER}{self.msg}'
@@ -162,7 +171,7 @@ class ProcessMessageReload(BaseProcessMessage):
 
 class ProcessMessageList(BaseProcessMessage):
     async def process_message(self):
-        videos = self.get_videos()
+        videos = await self.get_videos()
         for video in videos:
             message = await self.load_video(video)
             await self.send_message(message)
