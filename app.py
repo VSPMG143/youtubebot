@@ -8,6 +8,7 @@ from telepot import glance
 from telepot.aio import Bot
 from telepot.aio.api import set_proxy
 from telepot.aio.loop import MessageLoop
+from telepot.exception import TelegramError
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 from db import videos
@@ -52,6 +53,7 @@ class BaseProcessMessage(object):
         self.keyboard = None
         self.videos = []
         self.engine = None
+        self.retry = 5
 
     async def connect_db(self):
         loop = asyncio.get_event_loop()
@@ -96,7 +98,13 @@ class BaseProcessMessage(object):
         pass
 
     async def send_message(self, message):
-        await bot.sendMessage(self.chat_id, message, reply_markup=self.keyboard)
+        for i in range(self.retry):
+            try:
+                await bot.sendMessage(self.chat_id, message, reply_markup=self.keyboard)
+            except TelegramError:
+                asyncio.sleep(1)
+            else:
+                break
 
     async def load_video(self, video):
         try:
@@ -128,8 +136,9 @@ class BaseProcessMessage(object):
             res = await connection.execute(query)
             return bool(await res.fetchone())
 
-class ProcessMessage(BaseProcessMessage):
 
+class ProcessMessage(BaseProcessMessage):
+    
     async def process_message(self):
         if not await self.check_exist():
             videos = await self.get_videos()
