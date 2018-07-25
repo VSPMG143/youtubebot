@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import logging
 from urllib.parse import urlparse
 
 from aiopg.sa import create_engine
@@ -13,12 +14,18 @@ from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton, Reply
 
 from db import videos
 from secret import *
+from settings import LOGGING
+
+
+logging.config.dictConfig(LOGGING)
+logger = logging.getLogger(__name__)
 
 
 async def handle_message(msg):
     content_type, chat_type, chat_id = glance(msg)
 
     if content_type == 'text':
+        logger.debug('Message data: ', msg['text'])
         handle_class = ProcessMessage(msg['text'], chat_id)
         if msg['text'].startswith('/look_videos'):
             print(msg['text'])
@@ -28,6 +35,7 @@ async def handle_message(msg):
 
 async def handle_callback(msg):
     query_id, from_id, query_data = glance(msg, flavor='callback_query')
+    logger.debug('Callback data: ', query_data)
     
     path, msg = query_data.split(BaseProcessMessage.DIVIDER)
     if path == BaseProcessMessage.ONE_MORE:
@@ -82,10 +90,6 @@ class BaseProcessMessage(object):
             videos = self.msg
         return videos
 
-    async def get_stream(self, yt):
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self._get_stream, yt)
-
     async def start(self):
         await self.connect_db()
         if self.check_message():
@@ -102,6 +106,7 @@ class BaseProcessMessage(object):
             try:
                 await bot.sendMessage(self.chat_id, message, reply_markup=self.keyboard)
             except TelegramError:
+                logger.debug('TelegramError, attempt number: ', i)
                 asyncio.sleep(1)
             else:
                 break
@@ -138,7 +143,7 @@ class BaseProcessMessage(object):
 
 
 class ProcessMessage(BaseProcessMessage):
-    
+
     async def process_message(self):
         if not await self.check_exist():
             videos = await self.get_videos()
@@ -169,7 +174,7 @@ class ProcessMessageReload(BaseProcessMessage):
 
     async def load_video(self, video):
         try:
-            stream = self.fetch_stream(video)
+            stream = await self.fetch_stream(video)
             query = videos.update().where(videos.c.url == video).values(download=False)
             async with self.engine.acquire() as connection:
                 await connection.execute(query)
