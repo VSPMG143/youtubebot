@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import logging
+import logging.config
 from urllib.parse import urlparse
 
 from aiopg.sa import create_engine
