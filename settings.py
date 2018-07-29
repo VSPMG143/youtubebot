@@ -23,14 +23,14 @@ LOGGING = {
     },
     'handlers': {
         'console': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'base',
         }
     },
     'loggers': {
         'youtubebot': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'handlers': ['console'],
             'propagate': False,
         },

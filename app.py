@@ -19,14 +19,14 @@ from settings import LOGGING
 
 
 logging.config.dictConfig(LOGGING)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('youtubebot')
 
 
 async def handle_message(msg):
     content_type, chat_type, chat_id = glance(msg)
 
     if content_type == 'text':
-        logger.debug('Message data: ', msg['text'])
+        logger.debug('Message data: %s', msg['text'])
         handle_class = ProcessMessage(msg['text'], chat_id)
         if msg['text'].startswith('/look_videos'):
             print(msg['text'])
@@ -36,7 +36,7 @@ async def handle_message(msg):
 
 async def handle_callback(msg):
     query_id, from_id, query_data = glance(msg, flavor='callback_query')
-    logger.debug('Callback data: ', query_data)
+    logger.debug('Callback data: %s', query_data)
     
     path, msg = query_data.split(BaseProcessMessage.DIVIDER)
     if path == BaseProcessMessage.ONE_MORE:
