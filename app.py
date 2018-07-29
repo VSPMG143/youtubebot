@@ -87,8 +87,11 @@ class BaseProcessMessage(object):
             playlist = Playlist(self.msg)
             playlist.populate_video_urls()
             videos = playlist.video_urls
+            if videos == []:
+                videos = self.msg
         except IndexError:
             videos = self.msg
+        logger.debug('Videos: %s', videos)
         return videos
 
     async def start(self):
@@ -187,9 +190,12 @@ class ProcessMessageReload(BaseProcessMessage):
 class ProcessMessageList(BaseProcessMessage):
     async def process_message(self):
         videos = await self.get_videos()
+        print(videos)
         for video in videos:
+            print(video)
             message = await self.load_video(video)
             await self.send_message(message)
+            print(message)
 
 
 class ProcessMessageOne(BaseProcessMessage):
