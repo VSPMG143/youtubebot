@@ -87,10 +87,8 @@ class BaseProcessMessage(object):
             playlist = Playlist(self.msg)
             playlist.populate_video_urls()
             videos = playlist.video_urls
-            if videos == []:
-                videos = self.msg
         except IndexError:
-            videos = self.msg
+            videos = []
         logger.debug('Videos: %s', videos)
         return videos
 
@@ -151,7 +149,7 @@ class ProcessMessage(BaseProcessMessage):
     async def process_message(self):
         if not await self.check_exist():
             videos = await self.get_videos()
-            if isinstance(videos, list):
+            if videos:
                 message = 'Will you want load playlist?'
                 callback_data = f'{self.LOAD_LIST}{self.DIVIDER}{self.msg}'
                 callback_data2 = f'{self.LOAD_ONE}{self.DIVIDER}{self.msg}'
@@ -160,7 +158,7 @@ class ProcessMessage(BaseProcessMessage):
                     [InlineKeyboardButton(text='Скачать только это видео?', callback_data=callback_data2)]
                 ])
             else:
-                message = await self.load_video(videos)
+                message = await self.load_video(selg.msg)
         else:
             message = 'This video is exist!'
             callback_data = f'{self.ONE_MORE}{self.DIVIDER}{self.msg}'
@@ -190,12 +188,9 @@ class ProcessMessageReload(BaseProcessMessage):
 class ProcessMessageList(BaseProcessMessage):
     async def process_message(self):
         videos = await self.get_videos()
-        print(videos)
         for video in videos:
-            print(video)
             message = await self.load_video(video)
             await self.send_message(message)
-            print(message)
 
 
 class ProcessMessageOne(BaseProcessMessage):
