@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 import logging.config
+from abc import abstractclassmethod
 from urllib.parse import urlparse
 
 from aiopg.sa import create_engine
@@ -46,11 +47,12 @@ async def handle_callback(msg):
     elif path == BaseProcessMessage.LOAD_ONE:
         handle_class = ProcessMessageOne(msg, from_id)
     else:
+        logger.error('Error. %s - path do not exist!', path)
         return
     await handle_class.start()
 
 
-class BaseProcessMessage(object):
+class BaseProcessMessage:
     DIVIDER = '$#@'
     ONE_MORE = 'reload'
     LOAD_LIST = 'list'
@@ -100,6 +102,7 @@ class BaseProcessMessage(object):
             message = self.msg
             await bot.sendMessage(self.chat_id, message, reply_markup=self.keyboard)
 
+    @abstractclassmethod
     async def process_message(self):
         pass
 
@@ -111,6 +114,7 @@ class BaseProcessMessage(object):
                 logger.debug('TelegramError, attempt number: ', i)
                 asyncio.sleep(1)
             else:
+                logger.error('final TelegramError')
                 break
 
     async def load_video(self, video):
@@ -123,6 +127,7 @@ class BaseProcessMessage(object):
                 await connection.execute(query)
             return stream.default_filename
         except Exception as e:
+            logger.error(str(e))
             return str(e)
 
     async def fetch_stream(self, video):
