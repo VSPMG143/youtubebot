@@ -110,12 +110,11 @@ class BaseProcessMessage:
         for i in range(self.retry):
             try:
                 await bot.sendMessage(self.chat_id, message, reply_markup=self.keyboard)
+                return 
             except TelegramError:
-                logger.debug('TelegramError, attempt number: ', i)
+                logger.info(f'TelegramError, attempt number: {i}')
                 asyncio.sleep(1)
-            else:
-                logger.error('final TelegramError')
-                break
+        logger.error('final TelegramError')
 
     async def load_video(self, video):
         try:
@@ -163,7 +162,7 @@ class ProcessMessage(BaseProcessMessage):
                     [InlineKeyboardButton(text='Скачать только это видео?', callback_data=callback_data2)]
                 ])
             else:
-                message = await self.load_video(selg.msg)
+                message = await self.load_video(self.msg)
         else:
             message = 'This video is exist!'
             callback_data = f'{self.ONE_MORE}{self.DIVIDER}{self.msg}'
