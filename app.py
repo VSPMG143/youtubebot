@@ -1,8 +1,7 @@
 import argparse
 import asyncio
-import logging
 import logging.config
-from abc import abstractclassmethod
+from abc import abstractmethod
 from urllib.parse import urlparse
 
 from aiopg.sa import create_engine
@@ -80,11 +79,11 @@ class BaseProcessMessage:
     def check_message(self):
         return urlparse(self.msg).netloc in ('www.youtube.com', 'youtu.be')
 
-    async def get_videos(self):
+    async def get_videos(self) -> list:
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._get_videos) 
 
-    def _get_videos(self):
+    def _get_videos(self) -> list:
         try:
             playlist = Playlist(self.msg)
             playlist.populate_video_urls()
@@ -100,13 +99,14 @@ class BaseProcessMessage:
             await self.process_message()
         else:
             message = self.msg
-            await bot.sendMessage(self.chat_id, message, reply_markup=self.keyboard)
+            await self.send_message(message)
 
-    @abstractclassmethod
-    async def process_message(self):
+    @classmethod
+    @abstractmethod
+    async def process_message(cls):
         pass
 
-    async def send_message(self, message):
+    async def send_message(self, message: str) -> None:
         for i in range(self.retry):
             try:
                 await bot.sendMessage(self.chat_id, message, reply_markup=self.keyboard)
@@ -116,7 +116,7 @@ class BaseProcessMessage:
                 asyncio.sleep(1)
         logger.error('final TelegramError')
 
-    async def load_video(self, video):
+    async def load_video(self, video: str) -> str:
         try:
             stream = await self.fetch_stream(video)
             query = videos.insert().values(
@@ -129,11 +129,11 @@ class BaseProcessMessage:
             logger.error(str(e))
             return str(e)
 
-    async def fetch_stream(self, video):
+    async def fetch_stream(self, video: str):
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._fetch_stream, video)
 
-    def _fetch_stream(self, video):
+    def _fetch_stream(self, video: str):
         yt = YouTube(video)
         streams = yt.streams.filter(file_extension='mp4', type='video').order_by('resolution').desc().all()
         for stream in streams:
@@ -141,7 +141,7 @@ class BaseProcessMessage:
                 return stream
         return yt.streams.first()
 
-    async def check_exist(self):
+    async def check_exist(self) -> bool:
         query = videos.select().where(videos.c.url == self.msg)
         async with self.engine.acquire() as connection:
             res = await connection.execute(query)
@@ -178,7 +178,7 @@ class ProcessMessageReload(BaseProcessMessage):
         message = await self.load_video(self.msg)
         await self.send_message(message)
 
-    async def load_video(self, video):
+    async def load_video(self, video: str) -> str:
         try:
             stream = await self.fetch_stream(video)
             query = videos.update().where(videos.c.url == video).values(download=False)
