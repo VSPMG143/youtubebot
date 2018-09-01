@@ -1,6 +1,5 @@
-aiohttp==3.3.2
+aiohttp==3.4.1
 telepot==12.7
 pytube==9.2.2
-aiopg==0.14
+aiopg==0.15
 sqlalchemy==1.2.7
-
