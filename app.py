@@ -5,7 +5,7 @@ from abc import abstractmethod
 from urllib.parse import urlparse
 
 from aiopg.sa import create_engine
-from pytube import YouTube, Playlist
+from pytube import YouTube, Playlist, Stream
 from telepot import glance
 from telepot.aio import Bot
 from telepot.aio.api import set_proxy
@@ -22,7 +22,7 @@ logging.config.dictConfig(LOGGING)
 logger = logging.getLogger('youtubebot')
 
 
-async def handle_message(msg):
+async def handle_message(msg: dict):
     content_type, chat_type, chat_id = glance(msg)
 
     if content_type == 'text':
@@ -34,7 +34,7 @@ async def handle_message(msg):
             await handle_class.start()
 
 
-async def handle_callback(msg):
+async def handle_callback(msg: dict):
     query_id, from_id, query_data = glance(msg, flavor='callback_query')
     logger.debug('Callback data: %s', query_data)
     
@@ -66,32 +66,30 @@ class BaseProcessMessage:
         self.retry = 5
 
     async def connect_db(self):
-        loop = asyncio.get_event_loop()
         self.engine = await create_engine(
             database=DB_NAME,
             user=DB_USER,
             password=DB_PASSWORD,
             host=DB_HOST,
             port=DB_PORT,
-            loop=loop
+            loop=asyncio.get_event_loop()
         )
 
-    def check_message(self):
+    def check_message(self) -> bool:
         return urlparse(self.msg).netloc in ('www.youtube.com', 'youtu.be')
 
     async def get_videos(self) -> list:
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self._get_videos) 
+        return await asyncio.get_event_loop().run_in_executor(None, self._get_videos)
 
     def _get_videos(self) -> list:
         try:
             playlist = Playlist(self.msg)
             playlist.populate_video_urls()
-            videos = playlist.video_urls
+            video_urls = playlist.video_urls
         except IndexError:
-            videos = []
+            video_urls = []
         logger.debug('Videos: %s', videos)
-        return videos
+        return video_urls
 
     async def start(self):
         await self.connect_db()
@@ -129,11 +127,11 @@ class BaseProcessMessage:
             logger.error(str(e))
             return str(e)
 
-    async def fetch_stream(self, video: str):
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self._fetch_stream, video)
+    async def fetch_stream(self, video: str) -> Stream:
+        return await asyncio.get_event_loop().run_in_executor(None, self._fetch_stream, video)
 
-    def _fetch_stream(self, video: str):
+    @staticmethod
+    def _fetch_stream(video: str) -> Stream:
         yt = YouTube(video)
         streams = yt.streams.filter(file_extension='mp4', type='video').order_by('resolution').desc().all()
         for stream in streams:
@@ -152,8 +150,8 @@ class ProcessMessage(BaseProcessMessage):
 
     async def process_message(self):
         if not await self.check_exist():
-            videos = await self.get_videos()
-            if videos:
+            video_urls = await self.get_videos()
+            if video_urls:
                 message = 'Will you want load playlist?'
                 callback_data = f'{self.LOAD_LIST}{self.DIVIDER}{self.msg}'
                 callback_data2 = f'{self.LOAD_ONE}{self.DIVIDER}{self.msg}'
@@ -191,8 +189,8 @@ class ProcessMessageReload(BaseProcessMessage):
 
 class ProcessMessageList(BaseProcessMessage):
     async def process_message(self):
-        videos = await self.get_videos()
-        for video in videos:
+        video_urls = await self.get_videos()
+        for video in video_urls:
             message = await self.load_video(video)
             await self.send_message(message)
 
