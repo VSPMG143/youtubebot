@@ -26,13 +26,15 @@ async def close_pg(app):
 async def get_new_videos(request):
     query = videos.select().where(videos.c.download == False)
     async with app['engine'].acquire() as connection:
-        res = await connection.execute(query).fetchall()
+        res = []
+        async for row in connection.execute(query):
+            res.append({'name': row.name, 'url': row.url})
     return web.json_response({'videos': res})
 
 
 async def update_video(request):
     data = await request.json()
-    query = videos.update().where(videos.c.url == data.get('url', '')).values(download=False)
+    query = videos.update().where(videos.c.url == data.get('url', '')).values(download=True)
     async with app['engine'].acquire() as connection:
         await connection.execute(query)
     return web.json_response({'status': 'ok'})
@@ -40,7 +42,7 @@ async def update_video(request):
 
 async def update_videos(request):
     data = await request.json()
-    query = videos.update().where(videos.c.updated == data.get('date', date.today())).values(download=False)
+    query = videos.update().where(videos.c.updated == data.get('date', date.today())).values(download=True)
     async with app['engine'].acquire() as connection:
         await connection.execute(query)
     return web.json_response({'status': 'ok'})
