@@ -13,4 +13,3 @@ videos = sa.Table(
 )
 
 Video = namedtuple('Video', 'name url is_download id')
-
