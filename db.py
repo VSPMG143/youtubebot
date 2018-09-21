@@ -1,4 +1,3 @@
-from collections import namedtuple
 import sqlalchemy as sa
 
 
@@ -12,4 +11,3 @@ videos = sa.Table(
     sa.Column('download', sa.Boolean, default=False),
 )
 
-Video = namedtuple('Video', 'name url is_download id')
