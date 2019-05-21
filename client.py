@@ -21,18 +21,23 @@ async def main():
         async with session.get(SERVER_URL) as response:
             videos = await response.json()
             for video in videos['videos']:
-                try:
-                    yt = YouTube(video['url'])
-                    stream = get_stream(yt)
-                    stream.download('/home/neri/downloads')
-                    print('Success download!', video['name'])
-                except OSError:
-                    print('This video is exist! ', video['name'])
-                except Exception as e:
-                    print(e, video['url'])
-                    continue
-                await session.post(urljoin(SERVER_URL, 'update'), json={'url': video['url']})
-                print('Success update!', video['name'])
+                res = await load_video(video)
+                if res:
+                    await session.post(urljoin(SERVER_URL, 'update'), json={'url': video['url']})
+                    print('Success update!', video['name'])
+
+
+async def load_video(video):
+    try:
+        yt = YouTube(video['url'])
+        stream = get_stream(yt)
+        stream.download('/home/neri/downloads')
+        print('Success download!', video['name'])
+        return 1
+    except OSError:
+        print('This video is exist! ', video['name'])
+    except Exception as e:
+        print(e, video['url'])
 
 
 loop = asyncio.get_event_loop()
