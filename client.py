@@ -21,13 +21,13 @@ async def main():
         async with session.get(SERVER_URL) as response:
             videos = await response.json()
             for video in videos['videos']:
-                res = await load_video(video)
+                res = load_video(video)
                 if res:
                     await session.post(urljoin(SERVER_URL, 'update'), json={'url': video['url']})
                     print('Success update!', video['name'])
 
 
-async def load_video(video):
+def load_video(video):
     try:
         yt = YouTube(video['url'])
         stream = get_stream(yt)
