@@ -8,7 +8,6 @@ LOG_FILENAME = 'log.log'
 DB_NAME = 'youtube.sqlite3'
 
 DOWNLOAD_PATH = '/Users/macbookpro/Documents'
-PROXY_URL = 'https://2.38.102.165:8118'
 
 LOGGING = {
     'version': 1,

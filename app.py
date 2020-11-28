@@ -6,7 +6,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram.utils.request import Request
 
 from secret import *
-from settings import LOGGING, DOWNLOAD_PATH, PROXY_URL
+from settings import LOGGING, DOWNLOAD_PATH
 
 logging.config.dictConfig(LOGGING)
 logger = logging.getLogger('youtubebot')
@@ -67,8 +67,7 @@ def error(update, context):
 
 
 def run():
-    request = Request(proxy_url=PROXY_URL)
-    bot = Bot(TELEGRAM_TOKEN, request=request)
+    bot = Bot(TELEGRAM_TOKEN, request=Request())
     updater = Updater(bot=bot)
     dp = updater.dispatcher
 
