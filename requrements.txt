@@ -1,5 +1,5 @@
 aiohttp==3.4.2
-pytube==9.2.2
+pytube==10.0.0
 aiopg==0.16.0
 sqlalchemy==1.2.7
 python-telegram-bot==11.1.0
