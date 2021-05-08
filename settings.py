@@ -1,5 +1,5 @@
 import logging
-
+import pathlib
 
 LOG_FORMAT = '%(levelname)-8s [%(asctime)s] %(message)s'
 LOG_LEVEL = logging.DEBUG
@@ -7,7 +7,8 @@ LOG_FILENAME = 'log.log'
 
 DB_NAME = 'youtube.sqlite3'
 
-DOWNLOAD_PATH = '/Users/macbookpro/Documents'
+
+DOWNLOAD_PATH = pathlib.PosixPath(pathlib.Path().home(), pathlib.Path('Movies'))
 
 LOGGING = {
     'version': 1,
